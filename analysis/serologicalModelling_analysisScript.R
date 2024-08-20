@@ -3,7 +3,7 @@ library(tidyverse); library(rstan);library(loo)
 
 # Loading in and processing data 
 max_age <- 75
-df <- readRDS("data/processed_serological_data_ageAggregated.rds")
+df <- readRDS("data/serological/processed_serological_data_ageAggregated.rds")
 
 ## Setting up the data for the models
 foi_mapping_df <- data.frame(year_range = c(paste0(min(df$first_year_exposed), "-1974"), "1975-1984", "1985-1994", "1995-2004", 2005:2021))
@@ -428,7 +428,7 @@ overall2 %>%
 # Loading in and processing data
 
 ## Model fitting for Luanda
-luanda_df <- readRDS(file = "data/processedLuanda_seroData.rds")
+luanda_df <- readRDS(file = "data/serological/processedLuanda_seroData.rds")
 luanda_foi_mapping_df <- data.frame(year_range = c(paste0(min(luanda_df$first_year_exposed), "-1974"), "1975-1984", "1985-1994", "1995-2004", 2005:2021))
 luanda_foi_mapping_df$foi_number <- seq(1:length(luanda_foi_mapping_df$year_range))
 luanda_foi_mapping_df$rep <- c(1974 - min(luanda_df$first_year_exposed) + 1, 10, 10, 10, rep(1, length(2005:2021)))
@@ -463,7 +463,7 @@ if (fresh_run) {
 luanda_params <- rstan::extract(fit_luanda)
 
 ## Model fitting for Viana
-viana_df <- readRDS("data/processedViana_seroData.rds")
+viana_df <- readRDS("data/serological/processedViana_seroData.rds")
 viana_foi_mapping_df <- data.frame(year_range = c(paste0(min(viana_df$first_year_exposed), "-1974"), "1975-1984", "1985-1994", "1995-2004", 2005:2021))
 viana_foi_mapping_df$foi_number <- seq(1:length(viana_foi_mapping_df$year_range))
 viana_foi_mapping_df$rep <- c(1974 - min(viana_df$first_year_exposed) + 1, 10, 10, 10, rep(1, length(2005:2021)))
@@ -498,7 +498,7 @@ if (fresh_run) {
 viana_params <- rstan::extract(fit_viana)
 
 ## Model fitting for Zango
-zango_df <- readRDS("data/processedZango_seroData.rds")
+zango_df <- readRDS("data/serological/processedZango_seroData.rds")
 zango_foi_mapping_df <- data.frame(year_range = c(paste0(min(zango_df$first_year_exposed), "-1974"), "1975-1984", "1985-1994", "1995-2004", 2005:2021))
 zango_foi_mapping_df$foi_number <- seq(1:length(zango_foi_mapping_df$year_range))
 zango_foi_mapping_df$rep <- c(1974 - min(zango_df$first_year_exposed) + 1, 10, 10, 10, rep(1, length(2005:2021)))
