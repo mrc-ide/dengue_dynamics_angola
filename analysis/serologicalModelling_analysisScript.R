@@ -1,9 +1,22 @@
 # Loading required libraries 
-library(tidyverse); library(rstan);library(loo)
+library(tidyverse); library(rstan);library(loo); library(posterior)
 
 # Loading in and processing data 
 max_age <- 75
 df <- readRDS("data/serological/processed_serological_data_ageAggregated.rds")
+raw_data <- ggplot(data = df %>% rename(year = final_year_exposed)) +
+  geom_smooth(aes(x = age, y = 100 * IgG_positive / IgG_tested),
+              col = "#7C797F", fill = "#7C797F") +
+  geom_point(aes(x = age, y = 100 * IgG_positive/IgG_tested),
+             col = "black", pch = 21, fill = "#95C9C2", size = log(df$IgG_tested + 1)/2) +
+  facet_wrap(~year) +
+  coord_cartesian(ylim = c(0, 80)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),  # Remove major gridlines
+        panel.grid.minor = element_blank(),  # Remove minor gridlines
+        strip.background = element_rect(fill = "white"),
+        strip.text.x = element_text(hjust = 0)) +     # Adjust spacing between panels
+  labs(x = "Age (years)", y = "% IgG Positive")
 
 ## Setting up the data for the models
 foi_mapping_df <- data.frame(year_range = c(paste0(min(df$first_year_exposed), "-1974"), "1975-1984", "1985-1994", "1995-2004", 2005:2021))
@@ -30,13 +43,13 @@ alpha_sd <- 0.01
 iter <- 2500
 chains <- 3
 
-fresh_run <- FALSE
+fresh_run <- TRUE
 
 ## Model 1: Time-Varying FOI only
 
 ### Setting up and running the model
 if (fresh_run) {
-  model1 <- rstan::stan_model("scripts/angolaFOI_Model1_TimeVaryingFOI.stan")
+  model1 <- rstan::stan_model("models/angolaFOI_Model1_TimeVaryingFOI.stan")
   model1_stan_data <- list(
     N = N,
     A = A,
@@ -94,7 +107,7 @@ model1_fit_plot <- ggplot(y_draw_model1) +
 
 ### Setting up and running the model
 if (fresh_run) {
-  model2 <- rstan::stan_model("scripts/angolaFOI_Model2_TimeVaryingFOI_AgeVariableFOI.stan")
+  model2 <- rstan::stan_model("models/angolaFOI_Model2_TimeVaryingFOI_AgeVariableFOI.stan")
   model2_stan_data <- list(
     N = N,
     A = A,
@@ -157,7 +170,7 @@ model2_fit_plot <- ggplot(y_draw_model2) +
 
 ### Setting up and running the model
 if (fresh_run) {
-  model3 <- rstan::stan_model("scripts/angolaFOI_Model3_TimeVaryingFOI_Seroreversion.stan")
+  model3 <- rstan::stan_model("models/angolaFOI_Model3_TimeVaryingFOI_Seroreversion.stan")
   model3_stan_data <- list(
     N = N,
     A = A,
@@ -173,8 +186,7 @@ if (fresh_run) {
     zika_cross = zika_cross,
     alpha_mean = alpha_mean,
     alpha_sd = alpha_sd)
-  # model3_fit <- rstan::sampling(model3, data = model3_stan_data, iter = iter, chains = chains, cores = 3)
-  model3_fit <- rstan::sampling(model3, data = model3_stan_data, iter = 2500, chains = 1, cores = 1)
+  model3_fit <- rstan::sampling(model3, data = model3_stan_data, iter = iter, chains = chains, cores = chains)
   saveRDS(model3_fit, "outputs/angolaFOI_Model3_TimeVaryingFOI_Seroreversion_Outputs.rds")
 } else {
   model3_fit <- readRDS("outputs/angolaFOI_Model3_TimeVaryingFOI_Seroreversion_Outputs.rds")
@@ -249,6 +261,11 @@ if (fresh_run) {
   model4_fit <- readRDS("outputs/angolaFOI_Model4_TimeVaryingFOI_Seroreversion_AgeVariableFOI_Outputs.rds")
 }
 
+posterior_draws <- as_draws_matrix(model4_fit)  # You can also use as_draws_matrix(model1_fit)
+rhat_values <- apply(posterior_draws[, 1:24], 2, rstan::Rhat)
+ess_bulk_values <- apply(posterior_draws[, 1:24], 2, rstan::ess_bulk)
+ess_tail_values <- apply(posterior_draws[, 1:24], 2, rstan::ess_tail)
+
 model4_params <- rstan::extract(model4_fit)
 model4_outputs <- data.frame(
   point_estimate = apply(model4_params$lambda, 2, mean),
@@ -286,13 +303,19 @@ y_draw_model4 <- data.frame(
     upper = upper / N)
 
 model4_fit_plot <- ggplot(y_draw_model4) +
-  geom_ribbon(aes(x = age, ymax = upper, ymin = lower), fill = "grey20", alpha = 0.4) +
+  geom_ribbon(aes(x = age, ymax = 100 * upper, ymin = 100 * lower), fill = "grey20", alpha = 0.4) +
   geom_point(data = df %>% 
-               rename(year = final_year_exposed), aes(x = age, y = IgG_positive/IgG_tested),
-             col = "black", pch = 21, fill = "#95C9C2", size = 2) +
-  geom_line(aes(x = age, y = point_estimate), col = "grey20", linewidth = 1) +
+               rename(year = final_year_exposed), aes(x = age, y = 100 * IgG_positive/IgG_tested),
+             col = "black", pch = 21, fill = "#95C9C2", size = log(df$IgG_tested + 1)/2) +
+  geom_line(aes(x = age, y = 100 * point_estimate), col = "grey20", linewidth = 1) +
   facet_wrap(~year) +
-  labs(x = "Age (years)", y = "Seroprevalence")
+  labs(x = "Age (years)", y = "Seroprevalence") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),  # Remove major gridlines
+        panel.grid.minor = element_blank(),  # Remove minor gridlines
+        strip.background = element_rect(fill = "white"),
+        strip.text.x = element_text(hjust = 0)) +     # Adjust spacing between panels
+  labs(x = "Age (years)", y = "% IgG Positive")
 
 
 cowplot::plot_grid(model1_fit, model2_fit, model3_fit, model4_fit,
@@ -453,7 +476,7 @@ luanda_stan_data <- list(
   alpha_sd = alpha_sd)
 
 if (fresh_run) {
-  fit_luanda <- rstan::sampling(model4, data = luanda_stan_data, iter = 3000, chains = 1)
+  fit_luanda <- rstan::sampling(model4, data = luanda_stan_data, iter = iter, chains = chains, cores = chains)
   saveRDS(fit_luanda, 
           "outputs/angolaFOI_Model4_TimeVaryingFOI_Seroreversion_AgeVariableFOI_LowCross_LuandaONLY_Outputs.rds")
   
@@ -488,7 +511,7 @@ viana_stan_data <- list(
   alpha_sd = alpha_sd)
 
 if (fresh_run) {
-  fit_viana <- rstan::sampling(model4, data = viana_stan_data, iter = 3000, chains = 1)
+  fit_viana <- rstan::sampling(model4, data = viana_stan_data, iter = iter, chains = chains, cores = chains)
   saveRDS(fit_viana, 
           "outputs/angolaFOI_Model4_TimeVaryingFOI_Seroreversion_AgeVariableFOI_LowCross_VianaONLY_Outputs.rds")
   
@@ -523,7 +546,7 @@ zango_stan_data <- list(
   alpha_sd = alpha_sd)
 
 if (fresh_run) {
-  fit_zango <- rstan::sampling(model4, data = zango_stan_data, iter = 3000, chains = 1)
+  fit_zango <- rstan::sampling(model4, data = zango_stan_data, iter = iter, chains = chains, cores = chains)
   saveRDS(fit_zango, 
           "outputs/angolaFOI_Model4_TimeVaryingFOI_Seroreversion_AgeVariableFOI_LowCross_ZangoONLY_Outputs.rds")
   
