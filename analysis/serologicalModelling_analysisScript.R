@@ -255,7 +255,7 @@ if (fresh_run) {
     zika_cross = zika_cross,
     alpha_mean = alpha_mean,
     alpha_sd = alpha_sd)
-  model4_fit <- rstan::sampling(model4, data = model4_stan_data, iter = iter, chains = chains, cores = 3)
+  model4_fit <- rstan::sampling(model4, data = model4_stan_data, iter = iter, chains = chains, cores = chains)
   saveRDS(model4_fit, "outputs/angolaFOI_Model4_TimeVaryingFOI_Seroreversion_AgeVariableFOI_Outputs.rds")
 } else {
   model4_fit <- readRDS("outputs/angolaFOI_Model4_TimeVaryingFOI_Seroreversion_AgeVariableFOI_Outputs.rds")
@@ -273,7 +273,7 @@ model4_outputs <- data.frame(
   upper = apply(model4_params$lambda, 2, quantile, 0.95),
   year = foi_mapping_df$year_range,
   zika_cross = zika_cross)
-# plot(2005:2021, model4_outputs$point_estimate[5:21], type = "l", col = "black")
+plot(2005:2021, model4_outputs$point_estimate[5:21], type = "l", col = "black")
 # lines(2005:2021, model1_outputs$point_estimate[5:21], col = "blue")
 # lines(2005:2021, model2_outputs$point_estimate[5:21], col = "red")
 # lines(2005:2021, model3_outputs$point_estimate[5:21], col = "orange")
