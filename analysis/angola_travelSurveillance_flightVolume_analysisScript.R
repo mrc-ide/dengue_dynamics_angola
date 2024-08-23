@@ -144,19 +144,19 @@ x <- df3 %>%
 ggplot(x) +
   geom_bar(aes(x = date, fill = country_detection)) +
   theme_bw() +
-  scale_x_date(limits = c(as.Date("2013-01-01", format = "%Y-%m-%d"),
-                          as.Date("2013-12-31", format = "%Y-%m-%d"))) +
-  labs(x = "Date", y = "DENV Positive Traveller Cases",
-       fill = "Country of Residence") +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
+  scale_x_date(limits = c(as.Date("2013-02-01", format = "%Y-%m-%d"),
+                          as.Date("2013-07-31", format = "%Y-%m-%d")),
+               breaks = "1 month", date_labels = "%b") +
+  labs(x = "", y = "DENV Positive Traveller Cases",
+       fill = "Country of Residence")
 
 y <- df3 %>%
-  filter(year(date) == "2018")
+  filter(year(date) %in% c("2017", "2018", "2019"))
 ggplot(y) +
   geom_bar(aes(x = date, fill = country_detection)) +
   theme_bw() +
-  scale_x_date(limits = c(as.Date("2018-01-01", format = "%Y-%m-%d"),
-                          as.Date("2018-12-31", format = "%Y-%m-%d"))) +
+  scale_x_date(limits = c(as.Date("2017-01-01", format = "%Y-%m-%d"),
+                          as.Date("2019-12-31", format = "%Y-%m-%d"))) +
   labs(x = "Month of 2018", y = "DENV Positive Traveller Cases",
        fill = "Country of Residence") +
   theme(axis.text.x = element_text(angle = 45, hjust=1))
